@@ -1,1 +1,2 @@
-# my_blog_bak
+# blog builded by hexo
+##personal note
