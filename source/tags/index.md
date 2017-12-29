@@ -29,7 +29,7 @@ toc: true
 ### java
 ### C/C++
 ### Shell
-### Python
+### [Python](/tags/Python)
 ### Makefile
 # Tools[常用命令]
 ### Git

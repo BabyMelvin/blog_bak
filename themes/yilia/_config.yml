@@ -1,15 +1,15 @@
 # Header
 
 menu:
-  主页: /
+  主页: /tags
   标签: /tags
 
 # SubNav
 subnav:
   github: "https://github.com/BabyMelvin"
   weibo: "https://weibo.com"
-  rss: "#"
-  zhihu: "#"
+  #rss: "#"
+  zhihu: "https://www.zhihu.com/people/linuxde-ma-zi/activities"
   #qq: "#"
   #weixin: "#"
   #jianshu: "#"
@@ -17,7 +17,7 @@ subnav:
   #segmentfault: "#"
   #bilibili: "#"
   #acfun: "#"
-  #mail: "mailto:litten225@qq.com"
+  mail: "mailto:hang.yasuo@gmail.com"
   #facebook: "#"
   #google: "#"
   #twitter: "#"
