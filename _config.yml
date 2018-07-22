@@ -3,12 +3,12 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Melvin BLOG
+title: Hang Cao
 subtitle: Practice makes perfect!
-description: Learn Android OS
+description: Learn Android/Linux OS
 author: Melvin
-language:   
-timezone:
+language: zh-CN
+timezone: Asia/Shanghai
 email: hang.yasuo@gmail.com
 keywords: "Android,Linux,etc"
 
@@ -63,7 +63,7 @@ tag: 1
 ## You can customize the logger format as defined in
 ## http://www.senchalabs.org/connect/logger.html
 port: 4000
-server_ip: localhost
+server_ip: 67.218.150.144
 logger: false
 logger_format: dev
 
@@ -79,7 +79,7 @@ time_format: HH:mm:ss
 per_page: 8
 pagination_dir: page
 
-# Disqus
+# Disqus 评论
 disqus_shortname:
 
 # Extensions
@@ -90,14 +90,16 @@ disqus_shortname:
 #  - hexo-generator-baidu-sitemap
 #  - hexo-generator-sitemap
 
-theme: yilia
+# theme: yilia
+theme: next
 exclude_generator:
 
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repository: https://github.com/BabyMelvin/BabyMelvin.github.io.git
+  #repository: https://github.com/BabyMelvin/BabyMelvin.github.io.git
+  repository: git@github.com:BabyMelvin/BabyMelvin.github.io.git 
   branch: master
 
 sitemap:
