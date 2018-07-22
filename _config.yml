@@ -85,8 +85,9 @@ disqus_shortname:
 # Extensions
 ## Plugins: https://github.com/hexojs/hexo/wiki/Plugins
 ## Themes: https://github.com/hexojs/hexo/wiki/Themes
-# plugins:
-#  - hexo-generator-feed
+# Rss 订阅
+plugin:
+  - hexo-generator-feed
 #  - hexo-generator-baidu-sitemap
 #  - hexo-generator-sitemap
 
