@@ -14,7 +14,7 @@ keywords: "Android,Linux,etc"
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
-url: //melvin.me
+# url: //melvin.me
 # 是否需要修改 root 路径
 # 如果您的网站存放在子目录中，例如 http://yoursite.com/blog，
 # 请将您的 url 设为 http://yoursite.com/blog 并把 root 设为 /blog/。
@@ -37,7 +37,7 @@ titlecase: false # Transform title into titlecase
 external_link: true # Open external links in new tab
 filename_case: 0
 render_drafts: false
-post_asset_folder: false
+post_asset_folder: true
 relative_link: false
 highlight:                                                                                                                                                                                                   
   enable: true                                                                                                                                                                                               
@@ -51,7 +51,7 @@ category_map:
 tag_map:
 
 # Archives
-## 2: Enable pagination
+## 2: Enable pagination 分页
 ## 1: Disable pagination
 ## 0: Fully Disable
 archive: 1
@@ -129,4 +129,4 @@ jsonContent:
     permalink: false
     excerpt: false
     categories: false
-    tags: true
+    tags: false
