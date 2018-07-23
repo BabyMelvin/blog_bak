@@ -1,2 +1,83 @@
 // Custom styles.
+// 展开目录
+// 页面整体设置
+body {
+    background-color: #A8A8A8;
+    color: #000;
+    margin-left: 10px;
+    line-height: 1.5;
+}
+
+p { margin: 0 0 6px 0; }
+// 标签云页面样式（为emoji特设）
+.tag-cloud a {
+    color: #0593d3;
+    border-bottom: 1px solid #0593d3;
+    text-decoration: none;
+}
+.tag-cloud a:hover {
+    color: #ff7600;
+    border-bottom: 1px solid #ff7600;
+    text-decoration: none;
+}
 .post-toc .nav .nav-child { display: block; }
+// 页面留白更改
+.header-inner {
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+.posts-expand {
+    padding-top: 0px;
+}
+.posts-expand .post-meta {
+    margin: 3px 0 0 0;
+}
+.post-button {
+    margin-top: 0px;
+}
+// 标题样式
+.post-body h1,h2, h3, h4, h5, h6 {
+    border-left: 0px
+    margin-left: -22px;
+    padding-left: 0px;
+}
+// 首行缩进
+.post-body p {
+    text-indent: 2em;
+}
+//.main {
+//    padding-bottom: 125px;
+//}
+/*修目录bug，如果主题配置文件_config.yml的toc是wrap: true*/
+.post-toc ol {
+    padding: 0 10px 5px 10px;
+}
+
+//修改文章内code样式
+code {
+    color: #ff7600;
+    background: #fbf7f8;
+    margin: 2px;
+}
+
+// 大代码块的自定义样式
+.highlight, pre {
+    margin: 2px 0;
+    padding: 0px;
+    border-radius: 3px;
+    text-size: 12px;
+}
+.highlight, code, pre {
+    border: 1px solid #d6d6d6;
+}
+pre.code{
+    //background: #202020;
+}
+
+// 目录页面
+.category-all-page {
+    margin: 0 20px;
+}
+.category-all-page .category-list-count {
+    color: rgba(0, 0, 0, 0.5);
+}

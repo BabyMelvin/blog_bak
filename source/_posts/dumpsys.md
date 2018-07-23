@@ -5,7 +5,7 @@ tags: Android 调试
 categories: Android
 ---
 
-# Dumpsys 源码
+# 1.Dumpsys 源码
 
 ```cpp
 //framework/native/cmds/dumpsys/dumpsys.cpp
@@ -79,8 +79,8 @@ dumpsys主要工作分为4个步骤：
 * `service->dump()`调用远程服务中`dump()`方法来获取相应的dump信息
 
 
-# 使用
-## dumpsys命令用法
+# 2.使用
+## 2.1 dumpsys命令用法
 通过dumpsys命令查询系统服务运行状态：`dumpsys 服务名`
 
 ```
@@ -96,7 +96,7 @@ adb shell dumpsys -l
 adb shell service list
 ```
 
-## 系统服务
+## 2.2 系统服务
 
 重要服务
 
@@ -133,25 +133,26 @@ adb shell service list
 |jobscheduler|查看任务计划|
 
 
-## Actitivty场景
+## 2.3 Actitivty场景
 
 **场景1**： 查看某个APP所有Service状态
 
 ```
 dumpsys acitivty s com.sina.weibo
-``
+```
 
 * Service类型为`com.morgoo.droidplugin.PluginManagerService`
 * 运行在进程pid=7720，进程名为`com.sina.weibo`,uid=10094
 * 通过bindeService连接该服务的进程Pid=7306，进程名为`com.sina.weibo:PluginP03`
 
 当然还有`packageName`，`baseDir(apk路径)`，`dataDir(apk数据路径)`，`createTime`等各种信息。另外，新浪微博采用的是360开源的Android插件机制(`com.morgoo.droidplugin`)，主要用于hotfix等功能。
-```
+
 **场景2**：查询某个APP所有的广播状态
 
 ```
 dumpsys activity b com.sina.weibo
 ```
+
 * ` android.intent.action.SCREEN_ON`代表手机亮屏广播；
 * 接收该广播的receiver有很多个，其中一个所在进程为pid=7220，进程名为`com.sina.weibo`
 

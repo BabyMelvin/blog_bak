@@ -1,4 +1,4 @@
-<div class="copyright">{#
+<div class="copyright" style="background:#F8F8F8">{#
 #}{% set current = date(Date.now(), "YYYY") %}{#
 #}&copy; {% if theme.footer.since and theme.footer.since != current %}{{ theme.footer.since }} &mdash; {% endif %}{#
 #}<span itemprop="copyrightYear">{{ current }}</span>
