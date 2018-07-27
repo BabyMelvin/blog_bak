@@ -114,6 +114,7 @@ while((d=readdir(proc))){
 
 ## 2.4回到非root用户和组
 
+dumpstate由init启动，具有root权限
 ```c
 gid_t groups[] ={AID_LOG,AID_SDCARD,AID_SDCARD_RW,AID_MOUNT,AID_INET,AID_NET_BW_STATS};
 setgroups(sizeof(groups)/sizeof(groups[0],groups)!=0);
@@ -234,6 +235,7 @@ void do_dmesg(){
 size_t num_props=0;
 static char*props[2000];
 static void print_prop(const char*key,const char*name,void*user){
+    //未使用该变量，避免编译器出现 unused but defined warning.
     (void) user;
     //属性数目小于2000
     if(num_props<sizeof(props)/sizeof(props[0])){
@@ -311,19 +313,22 @@ bugreport通过socket与dumpstate服务建立通信。dumpstate()主要5大类:
 
 从bugreport内容输出顺序角度，详细内容:
 
-* 系统build以及运行时长等信息。
-* 内存/CPU进程等信息。
+* 系统build以及运行时长等信息。`/proc/version`,运行时间`uptime`
+* 内存/CPU进程等信息。`/proc/meminfo`,CPU信息：`top -n 1 -d 1 -m 30 -t`,`/proc/vmstat`,进程`ps -P`,线程`ps -t -p -P`
 * `kernel log`
-* `lsof`,`map`,`wait-channels`
-* `system log`
-* `event log`
-* `radio log`
+* `lsof`,`map`,`wait-channels`,LIST OF OPEN FILE(`/system/xbin/su lsof`)
+* `system log`,`logcat -v threadtime -d *:v`
+* `event log`,`logcat -b events -v threadtime -d *:v`
+* `radio log`:`logcat -b radio -v threadtime -d *:v`
 * `vm traces`
     * VM TRACES JUST NOW(`/data/anr/traces.txt.bugreport`)(抓bugreport时出发)
     * VM TRACES AT LAST ANR(`/data/anr/traces.txt`)(存在就输出)
     * TOMBSTONE(/data/tombstones/tombstone_xx)(存在就输出)
-* network相关信息
-* `last kernel log`
+* network相关信息:NETWORK DEV INFO`/proc/net/dev`,NETWORK ROUTES`/proc/net/route`
+* `last kernel log`,`proc/last_kmsg`
+* `last panic console`,`/data/dontpanic/apanic_console`
+* `last panic threads`,`/data/notpanic/apanic_threads`
+* SYSTEM SETTINGS:`sqlite3 /data/data/com.android.providers.settings/databases/settings.db pragma user_version; select * from system; select * from secure; select * from global;"
 * `last system log`
 * `ip相关信息`
 * `中断向量表`
@@ -343,7 +348,27 @@ bugreport通过socket与dumpstate服务建立通信。dumpstate()主要5大类:
     * dumpsys acitivty service all
     * dumpsys activity provider all
 
+## 3.1 ChkBugReport
+
+1.通过命令生成bugreport文件
+
+```c
+bugreport > bugreport.txt
+
+```
+
+2.执行chkbugreport，命令中jar和txt都必须填写相应文件的完全路径
+
+```c
+Java -jar chkbugreport.jar bugreport.txt
+```
+当然可以吧`.jar`添加path，则直接使用`chkbugreport bugreport.txt`
+
+3.通过浏览器打开`/bugreport_out/index.html`，可视化信息出现
 
 **参考**：
 
+
+
 [bugreport源码篇](http://gityuan.com/2016/06/10/bugreport/)
+
