@@ -301,6 +301,174 @@ use_kernel_interface该值后续应该会逐渐采用用户空间策略。不过
 ```c
 static struct shrinker lowmem_shrinker ={
     .scan_objects =lowmem_scan;
-
+	.count_objects=lowmeme_count;
+	.seeks=DEFAULT_SEEKS * 16;
 };
+ static int __init lowmem_init(void){
+	register_shrinker(&lowmem_shrinker);
+	return 0;
+}
+static void __exit lowmem_exit(void){
+	unregister_shrinker(&lowmem_shrinker);
+}
+module_init(lowmem_init);
+module_exit(lowmem_exit);
 ```
+
+LMK驱动通过注册shrinker实现的，shrinker是linux kernel标准的回收内存page的机制，由内核线程kswapd负责控制。
+
+当内存不足时kswapd线程会边里一张shrinker链表，并回调已注册的shrinker函数来回收内存page,kswpad还会周期性唤醒来执行内存操作。每个zone维护`active_list`和`inactive_list`，内核根据页面活动状态将page在这两个链表之间移动，最后通过shrink_slab和shrink_zone来回收内存页。
+
+## 3.1 Lowmem_count
+
+```c
+static unsigned long lowmem_count(struct shrinker* s,struct shrink_control *sc){
+	return global_page_state(NR_ACTIVE_ANON)+
+		global_page_state(BR_ACTIVE_FILE)+
+		global_page_state(NR+INACTIVE+ANON)+
+		global_page_state(NR_INACTIVE_FILE);
+}
+```
+
+`ANON`代表匿名映射，没有后备存储器；`FILE`代表文件映射；`内存映射`计算公式=`活动匿名内存`+`活动文件内存`+`不活动匿名内存`+`不活动文件内存`.
+
+## 3.2 lowmem_scan
+
+当触发lmkd，则先杀`oom_score_adj`最大的进程，当oom_adj相等时，则选择rss最大的进程。
+
+```c
+static unsigned long lowmem_scan(
+struct shrinker*s,struck shrinker_control *sc
+){
+	struct task_struct *tsk,*selected=NULL;
+	unsigne long rem=0;
+	int tasksize,i,minfree=0,selected_tasksize=0;
+	short min_score_ajd=OOM_SCORE_ADJ_MAX+1;
+	int array_size=ARRAT_SIZE(lowmem_adj);
+	//获取当前剩余内存大小
+	int other_free=global_page_state(NR_FREE_PAGES)-totalreserve_pages;
+	int other_file=global_page_state(NR_FILE_PAGES)-global_page_state(NR_SHMEM)-
+		total_swapcache_pages();
+	//获取数组大小
+	if(lowmem_adj_size<array_size){
+		array_size=lowmem_adj_size;
+	}
+	if(lowmem_minfree_size<array_size)
+		array_size=lowmem_minfree_size;
+
+	//遍历lowmem_minfree数组找出
+	for(i =0;i<array_size;i++){
+		minfree=lowmem_minfree[i];
+		if(other_free<minfree && other_file<minfree){
+			min_score_adj=lowmem_adj[i];
+			break;
+		}
+	}
+	if(min_score_adj ==OOM_SCORE_ADJ_MAX+1){
+		return 0;
+	}
+	selected_oom_score_adj =min_score_adj;
+	rcu_read_lock();
+	for_each_process(tsk){
+		struct task_struct*p;
+		short oom_score_adj;
+		if(tsk->flags& PF_KTHREAD)
+			continue;
+		p=find_lock_task_mm(tsk);
+		if(!p)
+			continue;
+		if(task_tsk_thread_flag(p,TIF_MEMDIE)&&
+			time_before_eq(jiffies,lowmem_deathpending_timeout)){
+			task_unlock(p);
+			rcu_read_unlock();
+			return 0;
+		}
+	}
+	oom_score_adj=p->signal->oom_score_adj;
+	//小于目标adj进程，则忽略
+	if(oom_score_adj<min_score_adj){
+		task_unlock(p);
+		continue;
+	}
+	//算法关键，选择oom_score_adj最大的进程中，并且rss内存最大的进程
+	if(selected){
+		if(oom_score_adj<selected_oom_score_adj)
+			continue;
+		if(oom_score_adj==selected_oom_score_ajd&& tasksize<=selected_tasksize)
+			continue;
+	}
+	selected=p;
+	secleted_tasksize=tasksize;
+	selected_oom_score_adj=oom_score_adj;
+	lowmem_print(2,"selected ‘%s’ adj %hd ,size %d ,to kill\n",,
+	p->comm,p->pid,oom_score_adj,tasksize);
+	if(selected){
+		long cache_size=other_file*(long)(PAGE_SIZE/1024);
+		long cache_limit=minfree*(long)(PAGE_SIZE/10324);
+		long free=other_free*(long)(PAGE_SIZE/1024);
+		//输出kill 的log
+		lowmem_print(1,"killing %s %d ,adj %hd,\n");
+		lowmem_deathpending_timeout=jiffies+HZ;
+		set_tsk_thread_flag(secleted,TIG_MEMDIE);
+		//向选中的目标进程发送signal 9 来杀掉目标进程
+		send_sig(SIGKILL,selceted,0);
+		rem+=selceted_tasksize;
+	}
+	rcu_read_unlock();
+	return rem;
+}
+```
+
+`lowmem_minfree`和`lowmem_adj[]`数组大小个数为6,通过如下两条命令:
+
+```
+module_param_named(debug_level,lowmem_debug_level,uint,S_IRUGO|S_IWUSE)
+module_param_array_named(adj,lowmem_adj,short,&lowmem_adj_size,S_IRUGO|S_IWUSE)
+```
+
+当如下节点变化，通过修改`lowmem_minfree[]`和`lowmem_adj[]`数组.
+
+```c
+/sys/module/lowmemorykiller/parameters/minfree
+/sys/module/lowmemorykiller/parameters/adj
+```
+
+# 4.总结
+
+从framework的ProcessList调整adj,通过socket通信将时间发送给native的守护进程lmkd；lmkd再根据具体的命令来执行相应的操作
+
+* 更新进程`oom_score_adj`的值和lowmemorykiller驱动参数`minfree`和`adj`
+
+最后讲到了lowmemorykiller驱动，通过注册shrinker，借助linux标准的内存回收机制，根据当前系统可用内存以及参数配置(adj,minfree)来选取合适的selected_oom_score_adj，再从所有进程中选择adj大于该目标取值并占用rss内存最大的进程，将其杀掉，从而释放出内存。
+
+##4.1 lmkd参数
+
+* oom_adj:代表进程的优先级，数值越大，优先级越低，越容易被杀，取值范围`[-16,15]`
+	* `/proc/<pid>/oom_adj`
+* oom_score_adj:取值范围`[-1000,1000]`
+	* `/proc/<pid>om_score_adj`
+* oom_score:lmkd策略中貌似并没有看下用的地方，应该是oom才会调用
+	* `/proc/<pid>/oom_score`
+
+对于`oom_adj`与`oom_score_adj`通过方法`lowmem_oom_adj_to_oom_score_adj()`建立一定映射关系:
+
+* 当oom_adj=15,则oom_score_adj=1000；
+* 当oom_adj<15,则oom_score_adj=oo_adj*1000/17
+
+## 4.2 driver参数
+
+```
+/sys/module/lowmemorykiller/parameters/minfree(代表page个数)
+/sys/module/lowmemorykiller/parameters/adj(代表oom_score_adj)
+```
+
+举例说明：
+
+* 参数设置：
+	* `1,6`写入节点`/sys/module/lowmemorykiller/parameters/adj`
+	* `1024,8192`写入节点`/sys/module/lowmemorykiller/parameters/minfree`
+* 策略解读:
+	* 当系统可用内存低语8192个pages时，则会杀掉oom_score_adj>=6的进程
+	* 当系统可用内存低于1024个pages时，会杀掉oom_score_adj>=1的进程。
+
+
