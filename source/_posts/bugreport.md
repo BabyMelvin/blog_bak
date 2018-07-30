@@ -328,7 +328,7 @@ bugreport通过socket与dumpstate服务建立通信。dumpstate()主要5大类:
 * `last kernel log`,`proc/last_kmsg`
 * `last panic console`,`/data/dontpanic/apanic_console`
 * `last panic threads`,`/data/notpanic/apanic_threads`
-* SYSTEM SETTINGS:`sqlite3 /data/data/com.android.providers.settings/databases/settings.db pragma user_version; select * from system; select * from secure; select * from global;"
+* SYSTEM SETTINGS:`sqlite3 /data/data/com.android.providers.settings/databases/settings.db pragma user_version; select * from system; select * from secure; select * from global;`
 * `last system log`
 * `ip相关信息`
 * `中断向量表`
@@ -348,7 +348,7 @@ bugreport通过socket与dumpstate服务建立通信。dumpstate()主要5大类:
     * dumpsys acitivty service all
     * dumpsys activity provider all
 
-## 3.1 ChkBugReport
+## 4.1 ChkBugReport
 
 1.通过命令生成bugreport文件
 
