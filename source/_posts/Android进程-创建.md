@@ -604,4 +604,4 @@ system_server进程等待zygote返回进程创建完成(ZygoteConnection.handleP
 
 参考：
 
-![理解Android进程创建流程](http://gityuan.com/2016/03/26/app-process-create/#forkandspecialize-1)
+[理解Android进程创建流程](http://gityuan.com/2016/03/26/app-process-create/#forkandspecialize-1)
