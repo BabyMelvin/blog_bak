@@ -1,7 +1,7 @@
 ---
 title: EventLog
 date: 2018-07-22 06:18:35
-tags: Android 调试
+tags: Android调试
 categories: Android 
 ---
 

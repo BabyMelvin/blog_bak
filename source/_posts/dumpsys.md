@@ -1,7 +1,7 @@
 ---
 title: dumpsys
 date: 2018-07-22 09:53:57
-tags: Android 调试
+tags: Android调试
 categories: Android
 ---
 
