@@ -5,8 +5,10 @@ tags: Android组件
 categories: Android
 ---
 
-# 0概述
+# 0.概述
 AMS是Android中`最核心的服务`，主要负责系统中`四大组件的启动`、`切换`、`调度`及`应用进程的管理和调度`等工作，其职责与操作系统中的进程管理和调度模块相类似，因此它在Android中非常重要。
+
+<!--more-->
 
 * `ActivityManagerService extends ActivityManagerNative implements Watchdog.Monitor, BatteryStatsImpl.BatteryCallback`
 * 客户端使用ActivityManager类。由于AMS是系统核心服务，很多API不能开放供客户端使用，所以设计者没有让ActivityManager直接加入AMS家族。在ActivityManager类内部通过调用AMN的getDefault函数得到一个ActivityManagerProxy对象，通过它可与AMS通信。
