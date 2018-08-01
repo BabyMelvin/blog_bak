@@ -9,6 +9,7 @@ categories: Android
 
 `SystemServer`由`Zygote` fork生成的，进程名为`system_server`，该进程承载着framework的核心服务。
 
+<!--more-->
 ![SystemServer](SystemServer/system_server.jpg)
 
 

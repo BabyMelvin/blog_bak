@@ -7,6 +7,7 @@ categories: Android
 
 # 1.Dumpsys 源码
 
+<!--more-->
 ```cpp
 //framework/native/cmds/dumpsys/dumpsys.cpp
 int main(int argc,char* const argv[]){

@@ -14,6 +14,7 @@ categories: Android
 * 3.处理子进程的终止(signal方式)
 * 4.提供属性服务
 
+<!--more-->
 ## 1.1 main
 
 ```cpp

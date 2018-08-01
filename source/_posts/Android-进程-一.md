@@ -9,6 +9,7 @@ categories: Android
 
 Android 进程优先级，分为10级。优先级调度方法`setThreadPriority(int tid,int priority)`
 
+<!--more-->
 ## 1.1 进程优先级
 
 |进程优先级|nice值|解释|

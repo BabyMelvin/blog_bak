@@ -10,6 +10,7 @@ categories: Android
 Android提供的Logger日志系统，基内核中的Logger日志驱动程序实现的，将日志记录保存在内核空间中。有效利用内存空间,Logger日志驱动程序内部使用一个`环形缓冲区` 来保存日志。Logger日志环形缓冲区满了之后，新的日志会覆盖旧的日志。
 为了避免重要信息被覆盖，日志类型分为四种：`main`,`system`,`radio`和`events`.对应实现的蠕动为：`/dev/log/main`,`/dev/log/system`,`/dev/log/radio`和`/dev/log/events`.
 
+<!--more-->
 ## 1.2 日志作用
 
 类型具体作用：

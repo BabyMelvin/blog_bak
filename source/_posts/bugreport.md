@@ -12,6 +12,7 @@ bugreport中路径为`framework/native/cmds`,生成可执行文件`/system/bin/b
 * 通过启动`property_set("ctl.start","dumpstate");`启动dumpstate服务(由init进程fork出来).
 * bugreport进程通过socket套接字与dumpstate进行通讯
 * bugreport作为客户端读取`length=read(s,buffer,sizeofo(buffer))`,并将读到的内容进行输出。`fwrite(buffer,1,length,stdout)`
+<!--more-->
 
 # 2.`dumpstate`
 

@@ -10,6 +10,7 @@ categories: Android
 `Android Build系统`用来编译`andorid系统`，`Android SDK`以及`相关文档`。
 Android Build系统主要由`Make文件`(主要)，`shell脚本`，以及`Python脚本`组成。
 
+<!--more-->
 主要介绍两个：
 
 * 1.make系统介绍

@@ -14,6 +14,7 @@ Android中进程和线程的区别：
 	* `system_server`进程：管理整个Java framework层，包含各种系统服务。
 	* `Zygote`进程：是Android系统的首个Java进程，是所有Java进程的父进程，包括`system_server`进程以及所有的APP进程都是Zygote的子进程。
 * **线程**:`new Thread().start()`
+<!--more-->
 
 ## 1.2进程创建过程
 

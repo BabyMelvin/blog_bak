@@ -4,7 +4,8 @@ date: 2018-07-30 09:58:33
 tags: Android进程
 categories: Android
 ---
-
+Zyote详解
+<!--more-->
 ```
 /frameworks/base/cmds/app_process/App_main.cpp
 /frameworks/base/core/jni/AndroidRuntime.cpp
@@ -15,7 +16,7 @@ categories: Android
 /frameworks/base/core/java/android/net/LocalServerSocket.java
 /system/core/libutils/Threads.cpp
 ```
-# 1,概述
+# 1.概述
 
 Zygote是由init.rc解析创建的，zygote所对应可执行程序`app_process`，所对应的资源文件是`App_main.cpp`,进程名为zygote。
 

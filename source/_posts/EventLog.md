@@ -10,6 +10,7 @@ Eventlog可以展示当前Activity各种状态，还可以显示window信息。
 tags格式定义位于文件`/system/etc/event-log-tags`.
 终端输入：`logcat -b events`
 
+<!--more-->
 那么会输出大量类似这样的信息：
 
 ```
