@@ -14,9 +14,9 @@ Linux有类似内存管理策略--OOM killer(Out of Memory Killer).OOM策略更�
 
 |功能|命令|对应方法|
 |--|--|--|
-|LMK_PROCPRIO|设置进程adj|PL.setOomAdj()|
-|LMK_TARGET|更新oom_adj|PL.updateOomLevels()|
-|LMK_PROCREMOVE|移除进程|PL.remove()|
+|LMK_PROCPRIO|设置进程adj|`PL.setOomAdj()`|
+|LMK_TARGET|更新oom_adj|`PL.updateOomLevels()`|
+|LMK_PROCREMOVE|移除进程`PL.remove()`|
 
 # 2.源码分析
 `lmkd`通过socket将framework层与native层联系起来，native层通过init解析服务信息与driver内核进程通信。
@@ -148,7 +148,7 @@ static int init(void){
         if(ret)
             ALOGE("kernel does not support memeory pressure events or in-kernlr low memory");
     }
-    for(i=0;i<=ADJTOSLOT(OOM_SCORE_ADJ_MAX;i++)){
+    for(i=0;i<=ADJTOSLOT(OOM_SCORE_ADJ_MAX);i++){
         procadjslot_list[i].next=&procadjslot_list[i];
         procadjslog_list[i].prev=&procadjslog_list[i];
     }
@@ -156,7 +156,7 @@ static int init(void){
 }
 ```
 
-通过检查`/sys/module/lowmemoryiller//parameters/minfree`节点是否具有可写权限来判断是否使用kernel来管理Lmk事件。默认该节点具有系统可写权限。
+通过检查`/sys/module/lowmemorykiller/parameters/minfree`节点是否具有可写权限来判断是否使用kernel来管理Lmk事件。默认该节点具有系统可写权限。
 
 ```c
 static void mainloop(void){
@@ -291,9 +291,9 @@ static void cmd_procprio(int pid,int uid,int oomadj){
 
 use_kernel_interface该值后续应该会逐渐采用用户空间策略。不过目前仍然use_inkernel_interface=1:
 
-* LMK_TARGET:AMS.updateConfiguation()的过程中调用`updateOomLevels()`方法，分别向`/sys/module/lowmemorykiller/parameters`的`minfree` 和 `adj`节点写入相应信息.
-* LMK_PROCPRIO:AMS.applyOomAdjLocked()的过程中调动的setOoAdj()，向`/proc/<pid>/oom_score_adj`写入omadj,则直接返回。
-* LMK_PROCREMOTE:AMS.handleAppDieLocked或者`AMS.cleanUpApplicationRecordLocked()`的过程,调用remove(),目前不做任何事，直接返回.
+* LMK_TARGET:`AMS.updateConfiguation()`的过程中调用`updateOomLevels()`方法，分别向`/sys/module/lowmemorykiller/parameters`的`minfree` 和 `adj`节点写入相应信息.
+* LMK_PROCPRIO:`AMS.applyOomAdjLocked()`的过程中调动的`setOoAdj()`，向`/proc/<pid>/oom_score_adj`写入omadj,则直接返回。
+* LMK_PROCREMOTE:`AMS.handleAppDieLocked`或者`AMS.cleanUpApplicationRecordLocked()`的过程,调用`remove()`,目前不做任何事，直接返回.
 
 # 3.Kernel层
 位于`/drivers/staging/Android/lowmemorykiller.c`
@@ -441,7 +441,7 @@ module_param_array_named(adj,lowmem_adj,short,&lowmem_adj_size,S_IRUGO|S_IWUSE)
 
 最后讲到了lowmemorykiller驱动，通过注册shrinker，借助linux标准的内存回收机制，根据当前系统可用内存以及参数配置(adj,minfree)来选取合适的selected_oom_score_adj，再从所有进程中选择adj大于该目标取值并占用rss内存最大的进程，将其杀掉，从而释放出内存。
 
-##4.1 lmkd参数
+## 4.1 lmkd参数
 
 * oom_adj:代表进程的优先级，数值越大，优先级越低，越容易被杀，取值范围`[-16,15]`
 	* `/proc/<pid>/oom_adj`
@@ -452,8 +452,8 @@ module_param_array_named(adj,lowmem_adj,short,&lowmem_adj_size,S_IRUGO|S_IWUSE)
 
 对于`oom_adj`与`oom_score_adj`通过方法`lowmem_oom_adj_to_oom_score_adj()`建立一定映射关系:
 
-* 当oom_adj=15,则oom_score_adj=1000；
-* 当oom_adj<15,则oom_score_adj=oo_adj*1000/17
+* 当`oom_adj=15`,则`oom_score_adj=1000；`
+* 当`oom_adj<15`,则`oom_score_adj=oo_adj*1000/17`
 
 ## 4.2 driver参数
 
@@ -468,7 +468,7 @@ module_param_array_named(adj,lowmem_adj,short,&lowmem_adj_size,S_IRUGO|S_IWUSE)
 	* `1,6`写入节点`/sys/module/lowmemorykiller/parameters/adj`
 	* `1024,8192`写入节点`/sys/module/lowmemorykiller/parameters/minfree`
 * 策略解读:
-	* 当系统可用内存低语8192个pages时，则会杀掉oom_score_adj>=6的进程
-	* 当系统可用内存低于1024个pages时，会杀掉oom_score_adj>=1的进程。
+	* 当系统可用内存低语8192个pages时，则会杀掉`oom_score_adj>=6`的进程
+	* 当系统可用内存低于1024个pages时，会杀掉`oom_score_adj>=1`的进程。
 
 
