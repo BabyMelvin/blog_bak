@@ -128,7 +128,7 @@ throws ZygoteInit.MethodAndArgsCaller {
 ```
 此处`systemServerClasspath`环境变量主要有`/system/framework/`目录下的`services.jar，ethernet-service.jar, wifi-service.jar`这3个文件
 
-## 2. zygoteInit
+# 2. zygoteInit
 
 ```java
 //RuntimeInit.java
@@ -142,7 +142,7 @@ throws ZygoteInit.MethodAndArgsCaller
 }
 ```
 
-### 2.1 redirectLogStreams
+## 2.1 redirectLogStreams
 
 ```java
 //RuntimeInit.java
@@ -181,7 +181,7 @@ class AndroidPrintStream extends LoggingPringStream{
 }
 ```
 
-### 2.2commonInit
+## 2.2commonInit
 
 ```
 //RuntimeInit.java
@@ -211,7 +211,7 @@ private static final void commonInit() {
 }
 ```
 
-### 2.3nativeZygoteInit
+## 2.3nativeZygoteInit
 `nativeZygoteInit()`方法在AndroidRuntime.cpp中，进行了jni映射，对应下面的方法。
 
 ```cpp
@@ -252,7 +252,7 @@ private static void applicationInit(int targetSdkVersion, String[] argv, ClassLo
 ```
 在`startSystemServer()`方法中通过硬编码初始化参数，可知此处`args.startClass`为”com.android.server.SystemServer”。
 
-### 2.5invokeStaticMain
+## 2.5invokeStaticMain
 
 ```java
 //RuntimeInit.java
@@ -279,7 +279,7 @@ private static void invokeStaticMain(String className, String[] argv, ClassLoade
 }
 ```
 
-### 2.6 MethodAndArgsCaller
+## 2.6 MethodAndArgsCaller
 
 ```java
 public static void main(String argv[]) {
@@ -317,5 +317,82 @@ public static class MethodAndArgsCaller extends Exception implements Runnable {
             throw new RuntimeException(ex);
         }
     }
+}
+```
+
+# 3.启动SystemServer启动
+
+从Zygote一路启动到SystemServer的过程。 简单回顾下，在RuntimeInit.java中invokeStaticMain方法通过创建并抛出异常ZygoteInit.MethodAndArgsCaller，在ZygoteInit.java中的main()方法会捕捉该异常，并调用`caller.run()`，再通过反射便会调用到`SystemServer.main()`方法，该方法主要执行流程：
+
+```
+SystemServer.main
+    SystemServer.run
+        createSystemContext
+        startBootstrapServices();
+        startCoreServices();
+        startOtherServices();
+        Looper.loop();
+```
+
+## 3.1 SystemServer.main
+
+```java
+public final class SystemServer{
+	...
+	public static void main(String[] args){
+		//先初始化对象，再调用run方法
+		new SystemServer().run();
+	}
+}
+private void run(){
+	//当系统时间比1970年更早，就设置当前系统时间为1970年
+	if(System.currentTimeMillis()<EARLIEST_SUPPORTED_TIME){
+		 SystemClock.setCurrentTimeMillis(EARLIEST_SUPPORTED_TIME);
+	}
+	//清除vm内存增长上限，由于启动过程需要较多的虚拟机内存空间
+	 VMRuntime.getRuntime().clearGrowthLimit();
+	VMRuntime.getRuntime().setTargetHeapUtilization(0.8f);
+	Build.ensureFingerprintProperty();
+	//确保当前系统进程的binder调用，总是运行在前台优先级(foreground priority)
+	BinderInternal.disableBackgroundScheduling(true);
+    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_FOREGROUND);
+    android.os.Process.setCanSelfBackground(false);
+	// 主线程looper就在当前线程运行
+	Looper.prepareMainLooper();
+	//加载android_servers.so库，该库包含的源码在frameworks/base/services/目录下
+	System.loadLibrary("android_servers");
+	//初始化系统上下文 
+	createSystemContext();
+	 //创建系统服务管理
+	mSystemServiceManager = new SystemServiceManager(mSystemContext);
+	//将mSystemServiceManager添加到本地服务的成员sLocalServiceObjects
+	LocalServices.addService(SystemServiceManager.class, mSystemServiceManager);
+	//启动各种系统服务
+	 try {
+        startBootstrapServices(); 
+        startCoreServices();      
+        startOtherServices();   
+    } catch (Throwable ex) {
+        Slog.e("System", "************ Failure starting system services", ex);
+        throw ex;
+    }
+	 //一直循环执行
+    Looper.loop();
+    throw new RuntimeException("Main thread loop unexpectedly exited");
+}
+```
+
+LocalServices通过用静态Map变量sLocalServiceObjects，来保存以服务类名为key，以具体服务对象为value的Map结构。
+
+## 3.2createSystemContext
+
+```
+//SystemServer.java
+private void createSystemContext(){
+	//创建system_server进程的上下文信息
+    ActivityThread activityThread = ActivityThread.systemMain();
+    mSystemContext = activityThread.getSystemContext();
+    //设置主题
+    mSystemContext.setTheme(android.R.style.Theme_DeviceDefault_Light_DarkActionBar);
 }
 ```
