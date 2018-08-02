@@ -541,4 +541,328 @@ scanPackageLI函数首先调用PackageParser对APK文件进行解析。根据前
 
 ### 4.2.3PackageParser分析
 PackageParser主要负责APK文件的解析，即解析APK文件中的AndroidManifest.xml代码如下：
+
+```java
+publicPackage parsePackage(File sourceFile, String destCodePath,
+           DisplayMetrics metrics, int flags) {
+      mParseError = PackageManager.INSTALL_SUCCEEDED;
+      mArchiveSourcePath =sourceFile.getPath();
+        ......//检查是否为APK文件
+      XmlResourceParser parser = null;
+      AssetManager assmgr = null;
+      Resources res = null;
+      boolean assetError = true;
+      try{
+           assmgr = new AssetManager();
+           int cookie = assmgr.addAssetPath(mArchiveSourcePath);
+           if (cookie != 0) {
+               res = new Resources(assmgr, metrics, null);
+              assmgr.setConfiguration(0, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                              0, 0, 0, 0,Build.VERSION.RESOURCES_SDK_INT);
+          /*获得一个XML资源解析对象，该对象解析的是APK中的AndroidManifest.xml文件。
+           以后再讨论AssetManager、Resource及相关的知识
+         */
+          parser = assmgr.openXmlResourceParser(cookie,                                            ANDROID_MANIFEST_FILENAME);
+               assetError = false;
+           } ......//出错处理
+       String[] errorText = new String[1];
+       Package pkg = null;
+       Exception errorException = null;
+        try {
+           //调用另外一个parsePackage函数
+           pkg = parsePackage(res, parser, flags, errorText);
+
+        } ......
+        ......//错误处理
+       parser.close();
+       assmgr.close();
+       //保存文件路径，都指向APK文件所在的路径
+       pkg.mPath = destCodePath;
+       pkg.mScanPath = mArchiveSourcePath;
+       pkg.mSignatures = null;
+       return pkg;
+}
+```
+![PackageParser
+](PackageManagerService/20150803110542379.png)
+
+* `PackageParser`定了相当多的内部类，这些内部类的作用就是保存对应的信息。解析AndroidManifest.xml文件得到的信息由Package保存。从该类的成员变量可看出，和Android四大组件相关的信息分别由`activites`、`receivers`、`providers`、`services`保存。由于一个APK可声明多个组件，因此activites和receivers等均声明为ArrayList。
+* 以`PackageParser.Activity`为例，它从`Component<ActivityIntentInfo>`派生。Component是一个模板类，元素类型是ActivityIntentInfo，此类的顶层基类是IntentFilter。`PackageParser.Activity`内部有一个ActivityInfo类型的成员变量，该变量保存的就是四大组件中Activity的信息。
+* Package除了保存信息外，还需要支持Intent匹配查询。例如，设置Intent的Action为某个特定值，然后查找匹配该Intent的Activity。由于ActivityIntentInfo是从IntentFilter派生的，因此它它能判断自己是否满足该Intent的要求，如果满足，则返回对应的ActivityInfo。
+* PackageParser定了一个轻量级的数据结构PackageLite，该类仅存储Package的一些简单信息。我们在介绍Package安装的时候，会遇到PackageLite。
+
+### 4.2.4scanPackageLI
+在PackageParser扫描完一个APK后，此时系统已经根据该APK中AndroidManifest.xm，创建了一个完整的Package对象，下一步就是将该Package加入到系统中。此时调用的函数就是另外一个scanPackageLI，其代码如下：
+
+```java
+private PackageParser.Package scanPackageLI(PackageParser.Package pkg,
+           int parseFlags, int scanMode, long currentTime) {
+        FilescanFile = new File(pkg.mScanPath);
+        ......
+       mScanningPath = scanFile;
+        //设置package对象中applicationInfo的flags标签，用于标示该Package为系统Package
+        if((parseFlags&PackageParser.PARSE_IS_SYSTEM) != 0) {
+           pkg.applicationInfo.flags |= ApplicationInfo.FLAG_SYSTEM;
+        }
+        //1.下面这句if判断极为重要，见下面的解释
+        if(pkg.packageName.equals("android")) {
+           synchronized (mPackages) {
+               if (mAndroidApplication != null) {
+                  ......
+               mPlatformPackage = pkg;
+               pkg.mVersionCode = mSdkVersion;
+               mAndroidApplication = pkg.applicationInfo;
+               mResolveActivity.applicationInfo = mAndroidApplication;
+               mResolveActivity.name = ResolverActivity.class.getName();
+               mResolveActivity.packageName = mAndroidApplication.packageName;
+               mResolveActivity.processName = mAndroidApplication.processName;
+               mResolveActivity.launchMode = ActivityInfo.LAUNCH_MULTIPLE;
+               mResolveActivity.flags = ActivityInfo.FLAG_EXCLUDE_FROM_RECENTS;
+               mResolveActivity.theme =
+                          com.android.internal.R.style.Theme_Holo_Dialog_Alert;
+               mResolveActivity.exported = true;
+               mResolveActivity.enabled = true;
+               //mResoveInfo的activityInfo成员指向mResolveActivity
+               mResolveInfo.activityInfo = mResolveActivity;
+               mResolveInfo.priority = 0;
+               mResolveInfo.preferredOrder = 0;
+               mResolveInfo.match = 0;
+               mResolveComponentName = new ComponentName(
+                       mAndroidApplication.packageName, mResolveActivity.name);
+           }
+        }
+```
+packageName为“android”的Package对应的APK是framework-res.apk.framework-res.apk还包含了以下几个常用的Activity。
+
+* `ChooserActivity`：当多个Activity符合某个Intent的时候，系统会弹出此Activity，由用户选择合适的应用来处理。
+* `RingtonePickerActivity`：铃声选择Activity
+* `ShutdownActivity`：关机前弹出的选择对话框。
+
+由前述知识可知，该Package和系统息息相关，因此它得到了PKMS的特别青睐，主要体现在以下几点。
+
+* `mPlatformPackage`成员用于保存该Package信息。
+* `mAndroidApplication`用于保存此Package中的ApplicationInfo。
+* `mResolveActivity`指向用于表示ChooserActivity信息的ActivityInfo。
+* `mResolveInfo`为ResolveInfo类型，它用于存储系统解析Intent（经IntentFilter的过滤）后得到的结果信息，例如满足某个Intent的Activity的信息。由前面的代码可知，mResolveInfo的activityInfo其实指向的就是mResolveActivity。
+
+**注意**在从PKMS中查询满足某个Intent的Activity时，返回的就是ResolveInfo，再根据ResolveInfo的信息得到具体的Activity。
+此处保存这些信息，主要是为了提高运行过程中的效率。Goolge工程师可能觉得ChooserActivity使用的地方比较多，所以这里单独保存了此Activity的信息。
+继续对scanPackageLI函数的分析
+
+```java
+//mPackages用于保存系统内的所有Package，以packageName为key
+if(mPackages.containsKey(pkg.packageName)
+               || mSharedLibraries.containsKey(pkg.packageName)) {
+       return null;
+}
+File destCodeFile = newFile(pkg.applicationInfo.sourceDir);
+FiledestResourceFile = new File(pkg.applicationInfo.publicSourceDir);
+SharedUserSettingsuid = null;//代表该Package的SharedUserSetting对象
+PackageSetting pkgSetting = null;//代表该Package的PackageSetting对象
+synchronized(mPackages) {
+   //此段代码大约有300行左右，主要做了以下几方面工作
+   /*1.如果该Packge声明了” uses-librarie”话，那么系统要判断该library是否在mSharedLibraries中
+     2.如果package声明了SharedUser，则需要处理SharedUserSettings相关内容,由Settings的getSharedUserLPw函数处理
+	 3.处理pkgSetting，通过调用Settings的getPackageLPw函数完成
+     4.调用verifySignaturesLP函数，检查该Package的signature
+          */
+   }
+   final long scanFileTime = scanFile.lastModified();
+   final boolean forceDex = (scanMode&SCAN_FORCE_DEX) != 0;
+   //确定运行该package的进程的进程名，一般用packageName作为进程名
+   pkg.applicationInfo.processName = fixProcessName(
+                         pkg.applicationInfo.packageName,
+                         pkg.applicationInfo.processName,
+                         pkg.applicationInfo.uid);
+      if(mPlatformPackage == pkg) {
+           dataPath = new File (Environment.getDataDirectory(),"system");
+           pkg.applicationInfo.dataDir = dataPath.getPath();
+      }else {
+            /*getDataPathForPackage函数返回该package的目录
+            一般是/data/data/packageName/
+           */
+           dataPath = getDataPathForPackage(pkg.packageName, 0);
+           if(dataPath.exists()){
+             ......//如果该目录已经存在，则要处理uid的问题
+           } else {
+              //向installd发送install命令，实际上就是在/data/data下
+              //建立packageName目录。后续将分析installd相关知识
+              int ret = mInstaller.install(pkgName, pkg.applicationInfo.uid,
+                       pkg.applicationInfo.uid);
+              //为系统所有user安装此程序
+               mUserManager.installPackageForAllUsers(pkgName,pkg.applicationInfo.uid);
+               if (dataPath.exists()) {
+                   pkg.applicationInfo.dataDir = dataPath.getPath();
+               } ......
+               if (pkg.applicationInfo.nativeLibraryDir == null &&
+                      pkg.applicationInfo.dataDir!= null) {
+               ......//为该Package确定native library所在目录
+              //一般是/data/data/packagename/lib
+           }
+    }
+    //如果该APK包含了native动态库，则需要将它们从APK文件中解压并复制到对应目录中
+    if(pkg.applicationInfo.nativeLibraryDir != null) {
+           try {
+               final File nativeLibraryDir = new
+                            File(pkg.applicationInfo.nativeLibraryDir);
+               final String dataPathString = dataPath.getCanonicalPath();
+               //从2.3开始，系统package的native库统一放在/system/lib下。所以
+               //系统不会提取系统Package目录下APK包中的native库
+               if (isSystemApp(pkg) && !isUpdatedSystemApp(pkg)) {
+                   NativeLibraryHelper.removeNativeBinariesFromDirLI(
+                                            nativeLibraryDir)){
+           } else if (nativeLibraryDir.getParentFile().getCanonicalPath()
+                       .equals(dataPathString)) {
+                   boolean isSymLink;
+                  try {
+                        isSymLink = S_ISLNK(Libcore.os.lstat(
+                                        nativeLibraryDir.getPath()).st_mode);
+                   } ......//判断是否为链接，如果是，需要删除该链接
+                   if (isSymLink) {
+                       mInstaller.unlinkNativeLibraryDirectory(dataPathString);
+                   }
+             //在lib下建立和CPU类型对应的目录，例如ARM平台的是arm/，MIPS平台的是mips/
+               NativeLibraryHelper.copyNativeBinariesIfNeededLI(scanFile,
+                                   nativeLibraryDir);
+               } else {
+                   mInstaller.linkNativeLibraryDirectory(dataPathString,
+                                       pkg.applicationInfo.nativeLibraryDir);
+               }
+           } ......
+        }
+     pkg.mScanPath= path;
+     if((scanMode&SCAN_NO_DEX) == 0) {
+            ......//对该APK做dex优化
+        performDexOptLI(pkg,forceDex, (scanMode&SCAN_DEFER_DEX);
+      }
+     //如果该APK已经存在，要先杀掉运行该APK的进程
+     if((parseFlags & PackageManager.INSTALL_REPLACE_EXISTING) != 0) {
+           killApplication(pkg.applicationInfo.packageName,
+                       pkg.applicationInfo.uid);
+     }
+......__________________________________________________________________________
+     /*在此之前，四大组件信息都属于Package的私有财产，现在需要把它们登记注册到PKMS内部的
+     财产管理对象中。这样，PKMS就可对外提供统一的组件信息，而不必拘泥于具体的Package*/
+   synchronized(mPackages) {
+   	if ((scanMode&SCAN_MONITOR) != 0) {
+        mAppDirs.put(pkg.mPath, pkg);
+   }
+   mSettings.insertPackageSettingLPw(pkgSetting, pkg);
+   mPackages.put(pkg.applicationInfo.packageName,pkg);
+   //1.处理该Package中的Provider信息
+   int N =pkg.providers.size();
+   int i;
+   for (i=0;i<N; i++) {
+   	PackageParser.Providerp = pkg.providers.get(i);
+   	p.info.processName=fixProcessName(
+                               pkg.applicationInfo.processName,
+                  p.info.processName, pkg.applicationInfo.uid);
+    //mProvidersByComponent提供基于ComponentName的Provider信息查询
+    mProvidersByComponent.put(new ComponentName(
+                               p.info.packageName,p.info.name), p);
+            ......
+   }
+   //2.处理该Package中的Service信息
+   N =pkg.services.size();
+   r = null;
+   for (i=0;i<N; i++) {
+   	PackageParser.Service s =pkg.services.get(i);
+  	 mServices.addService(s);
+   }
+   //3.处理该Package中的BroadcastReceiver信息
+   N =pkg.receivers.size();
+   r = null;
+   for (i=0;i<N; i++) {
+   	PackageParser.Activity a =pkg.receivers.get(i);
+   	mReceivers.addActivity(a,"receiver");
+   ......
+   }
+   //处理该Package中的Activity信息
+   N = pkg.activities.size();
+   r =null;
+   for (i=0; i<N; i++) {
+   	PackageParser.Activity a =pkg.activities.get(i);
+   	mActivities.addActivity(a,"activity");//后续将详细分析该调用
+  }
+   //处理该Package中的PermissionGroups信息
+   N = pkg.permissionGroups.size();
+   ......//permissionGroups处理
+   N =pkg.permissions.size();
+   ......//permissions处理
+   N =pkg.instrumentation.size();
+   ......//instrumentation处理
+   if(pkg.protectedBroadcasts != null) {
+      N = pkg.protectedBroadcasts.size();
+      for(i=0; i<N; i++) {
+        mProtectedBroadcasts.add(pkg.protectedBroadcasts.get(i));
+      }
+}
+   ......//Package的私有财产终于完成了公有化改造
+return pkg;
+}
+```
+### 4.2.5scanDirLI函数总结
+scanDirLI用于对指定目录下的APK文件进行扫描，如图4-7所示为该函数的调用流程。
+![scanDirLI
+](PackageManagerService/20150803110657112.png)
+
+扫描完APK文件后，Package的私有财产就充公了。PKMS提供了好几个重要数据结构来保存这些财产，这些数据结构的相关信息
+![datastruct
+](PackageManagerService/20150803110726269.png)
+
+## 4.3扫描非系统Package
+非系统Package就是指那些不存储在系统目录下的APK文件，这部分代码如下：
+
+```java
+if (!mOnlyCore) {//mOnlyCore用于控制是否扫描非系统Package
+   Iterator<PackageSetting> psit = mSettings.mPackages.values().iterator();
+   while (psit.hasNext()) {
+      ......//删除系统package中那些不存在的APK
+   }
+   mAppInstallDir = new File(dataDir,"app");
+   .....//删除安装不成功的文件及临时文件
+   if (!mOnlyCore) {
+     //在普通模式下，还需要扫描/data/app以及/data/app_private目录 
+     mAppInstallObserver = new AppDirObserver(mAppInstallDir.getPath(), OBSERVER_EVENTS, false);
+     mAppInstallObserver.startWatching();
+     scanDirLI(mAppInstallDir, 0, scanMode, 0);
+     mDrmAppInstallObserver = newAppDirObserver(mDrmAppPrivateInstallDir.getPath(), OBSERVER_EVENTS, false);
+     mDrmAppInstallObserver.startWatching();
+     scanDirLI(mDrmAppPrivateInstallDir,         PackageParser.PARSE_FORWARD_LOCK,scanMode,0);
+   } else {
+     mAppInstallObserver = null;
+     mDrmAppInstallObserver = null;
+}
+```
+结合前述代码，这里总结几个存放APK文件的目录。
+
+* 系统Package目录包括：`/system/frameworks`、`/system/app`和`/vendor/app`。
+* 非系统Package目录包括：`/data/app`、`/data/app-private`。
+
+## 4.4 第二阶段工作总结
+PKMS构造函数第二阶段的工作任务非常繁重，要创建比较多的对象，所以它是一个耗时耗内存的操作。在工作中，我们一直想优化该流程以加快启动速度，例如延时扫描不重要的APK，或者保存Package信息到文件中，然后在启动时从文件中恢复这些信息以减少APK文件读取并解析XML的工作量。但是一直没有一个比较完满的解决方案，原因有很多。比如APK之间有着比较微妙的依赖关系，因此到底延时扫描哪些APK，尚不能确定。
 # 5.扫描之后
+这部分任务比较简单，就是将第二阶段收集的信息再集中整理一次，比如将有些信息保存到文件中
+
+```java
+......
+mSettings.mInternalSdkPlatform= mSdkVersion;
+//汇总并更新和Permission相关的信息
+updatePermissionsLPw(null, null, true,regrantPermissions,regrantPermissions);
+//将信息写到package.xml、package.list及package-stopped.xml文件中
+mSettings.writeLPr();
+Runtime.getRuntime().gc();
+mRequiredVerifierPackage= getRequiredVerifierLPr();
+......//PKMS构造函数返回
+}
+```
+
+# 6.PKMS构造函数总结
+
+从流程角度看，PKMS构造函数的功能还算清晰，无非是扫描XML或APK文件，但是其中涉及的数据结构及它们之间的关系却较为复杂。
+
+* 理解PKMS构造函数工作的三个阶段及其各阶段的工作职责。
+
+* 了解PKMS第二阶段工作中解析APK文件的几个关键步骤.
+
+* 了解重点数据结构的名字和大体功能。
