@@ -327,3 +327,161 @@ subprojects{
 	}
 }
 ```
+
+开发java工程，很多小模块，每个模块也都是一个java工程。
+
+```
+subprojects{
+	apply plugin: 'java'
+	repositories{
+		jcenter()
+	}
+}
+```
+
+allprojects方法对所有的项目进行配置。**subprojects和allprojects其实是两个方法**，接受一个`闭包`作为参数，对所有工程进行遍历，遍历过程中调用我们自定义的闭包，闭包里配置、打印、输出或修改Project属性都可以。**闭包**就是个函数?将整个函数整体进行声明一个函数指针进行传递。这个函数指针模板类`Closure<>`，调用该函数指针方法`closure(parm1,parm2)` 
+
+## 3.3Project及tasks
+
+**project**可以有很多，一个project用于生成jar包，定义另一个用于生成war包，可以定义一个发布上传war包等。最后一个个project组成整个Gradle构建。
+
+一个project又包含多个task。**task**就是一个操作，一个原子性操作，比如打个jar包，复制一个文件，编译一次java代码，上传一个jar到Maven中心库。
+
+### 3.3.1建一个任务
+
+```
+task customTask1{
+	doFirst{
+		println 'customTask1:doFirst'
+	} 
+	doLast{
+		println 'customTaks1:doLast'
+	}
+}
+```
+
+* Task其实是Project对象一个函数，原型`create(String name,Closure configureClosure)`
+* customTask1是一个任务名字，可以自定义
+* 第二个参数是一个闭包，最后一个参数是闭包，可以省略放外面。
+
+还可以通过TaskContainer创建任务。Project对象已经帮我们定义好了一个TaskContainer,就是`tasks`
+
+```
+tasks.create("customTask2"){
+	doFirst{
+		println 'customTask2:doFirst'
+	} 
+	doLast{
+		println 'customTaks2:doLast'
+	}
+}
+```
+和之前创建`customTask1`效果一样，只是创建方式不同。
+
+### 3.3.2任务依赖
+
+任务由依赖关系。哪些执行完成后，其他任务才能执行。jar任务依赖于compile，install任务依赖于package任务进行打包生成apk。
+
+```
+task ex35Hello<<{
+	println 'hello'
+}
+task ex35Main(dependsOn:ex35Hello){
+	doLast{
+		println 'main'
+	}
+}
+```
+先执行hello，后执行main。
+
+还可以写多个依赖关系如下：
+
+```
+task ex35MultiTask{
+	dependsOn ex35Hello,ex35World
+	doLast{
+		printl 'multiTask'
+	}
+}
+```
+
+### 3.3.3任务间交互
+和变量一样，要使用任务名操作任务，必须先声明，因为脚本是顺序执行的：
+
+```
+task ex36Hello<<{
+	println 'doLast1'
+}
+ex36Hello.doFirst{
+	println 'doFirst1'
+}
+ex36Hello.doLast{
+	println 'dowLast2'
+}
+```
+
+可以验证是否具有某个属性：`project.hasProperty('ex36Hello')`
+
+## 3.4自定义属性
+Project和Task都允许用户添加额外的自定义属性，添加额外的属性，`ext`属性来实现。
+
+```
+//自定义一个Project属性
+ext.age=16
+
+//通过代码块project属性
+ext{
+	phone=13345
+	address=''
+}
+task ex37CustomProperty<<{
+	println "年龄：${age}"
+	println "电话是:${phone}"
+}
+```
+
+自定义属性比局部变量有更广泛的作用域，可以跨Project，跨Task访问这些自定义属性。**只要能访问属性所属对象就能访问这些属性**
+
+自定义属性还可以SourceSet中，当使用productFlavors定义多个渠道，还会增加很多的SourceSet:
+
+```
+apply plugin: 'java'
+//自定义一个project属性
+ext.age=18
+
+//通过代码同时自定义多个属性
+ext {
+	phone=1334512
+	address=''
+}
+sourceSets.all {
+	ext.resourceDir=null
+}
+sourceSets{
+	main {
+		resourceDir = 'main/res'
+	}
+	test {
+		resourceDir = 'test/res'
+	}
+}
+task ext37Cu<<{
+	println "年龄 ${age}"
+	println "电话 ${phone}"
+	println "地址 ${address}"
+	sourceSets.each {
+		println "${it.name}resourceDir是:${it.resourceDir}"
+	}
+}
+```
+项目中一般使用它来自定义版本号和版本名称，把版本号和版本名称单独放在一个Gradle文件中，便于管理。
+
+定义一个生成日期格式的方法：
+
+```
+def buildTime(){
+	def date = new Date()
+	def formattedDate=date.format('yyyyMMdd')
+	return formattedDate
+}
+```
