@@ -225,3 +225,53 @@ buildscript{
 `buildscript{}`块是构建项目之前，为项目进行前期准备和初始化相关配置依赖地方，配置所需要依赖，就可以使用应用插件了`apply plugin: 'com.android.application'`
 
 ## 2.4自定义插件
+自定义插件涉及知识点很多，比如创建任务、创建方法、进行约定等。
+下面介绍创建一个任务为例，进行自定义插件介绍。
+
+```
+apply plugin:MyPlugin
+class MyPlugin implements Plugin<Project>{
+	void apply(Project project){
+		project.task('myTask')<<{
+			println "自定义插件创建的任务"
+		}
+	}
+}
+```
+
+现在可以执行`./gralew myTask`来执行任务(这个任务通过自定义插件创建的)
+
+## 2.5发布插件
+
+1.创建一个Groovy工程，然后配置插件开发所需的依赖：
+
+```
+apply plugin:'groovy'
+dependencies {
+	compile gradleApi()
+	compile localGroovy()
+}
+```
+
+2.然后实现插件类
+
+```
+package com.githubb.rujews.plugins
+
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+
+class MyPlugin implements Plugin<Project>{
+	@override
+	void apply(Project target){
+		target.task('myTask')<<{
+			println "这是自定义插件创建的任务"
+		}
+	}
+}
+```
+
+Gradle通过META-INF里properties文件来发现对应插件实现类的。首先确定一个在src/main/resource/META-INF/gradle-plugins/目录先建立properties文件`com.github.rujews.plugins.myTask.properties`添加一行内容`implementation-class=com.github.rujews.plugins.MyTask`
+
+
+配置好久可以给其他人使用了。
