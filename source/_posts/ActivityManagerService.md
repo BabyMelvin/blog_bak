@@ -1,6 +1,6 @@
 ---
 title: ActivityManagerService
-date: 2018-08-01 03:47:00
+date: 2017-08-01 03:47:00
 tags: Android组件
 categories: Android
 ---

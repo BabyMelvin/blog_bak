@@ -1,6 +1,6 @@
 ---
 title: dumpsys
-date: 2018-07-22 09:53:57
+date: 2016-10-23 09:53:57
 tags: Android调试
 categories: Android
 ---

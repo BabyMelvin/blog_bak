@@ -1,6 +1,6 @@
 ---
 title: gradle任务和插件
-date: 2018-08-04 09:59:34
+date: 2017-08-04 09:59:34
 tags: Android脚本
 categories: Android
 ---

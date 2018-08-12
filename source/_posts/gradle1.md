@@ -1,6 +1,6 @@
 ---
 title: gradle-入门
-date: 2018-08-03 09:06:31
+date: 2017-08-03 09:06:31
 tags: Android脚本
 categories: Android
 ---

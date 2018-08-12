@@ -1,6 +1,6 @@
 ---
 title: 'Logger系统 '
-date: 2018-07-26 10:24:55
+date: 2016-12-26 10:24:55
 tags: Android调试
 categories: Android
 ---

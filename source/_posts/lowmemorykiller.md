@@ -1,6 +1,6 @@
 ---
 title: lowmemorykiller
-date: 2018-07-27 04:27:54
+date: 2017-10-27 04:27:54
 tags: Android 内存管理
 categories: Android
 ---

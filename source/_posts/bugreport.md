@@ -1,6 +1,6 @@
 ---
 title: bugreport
-date: 2018-07-25 23:43:26
+date: 2016-10-25 23:43:26
 tags: Android调试
 categories: Android
 ---

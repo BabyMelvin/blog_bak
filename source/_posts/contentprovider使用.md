@@ -1,6 +1,6 @@
 ---
 title: contentprovider使用
-date: 2018-08-11 23:49:14
+date: 2017-03-11 23:49:14
 tags: Android组件
 categories: Android
 ---
@@ -283,3 +283,13 @@ intents能够对contentprovider提供直接权限。
 * 可以允许用户这个用户即使没有权限也能获得数据。
 * 或者通过一个result intent从一个有权限应用获得
 * 获得激活一个有权限的应用让他来为你工作。
+
+## 7.4通过临时权限获得
+应用通过添加intent的flag获得临时权限，这个权限直到获取完成返回。添加的标志如下：
+
+* read permission:`FLAG_GRANT_READ_URI_PERMISSION`
+* write permission:`FLAG_GRANT_WRITE_URI_PERMISSION`
+
+注意：这些flags不会给包含在URI中的authority权限，仅仅是URI本身。
+
+在mainifest中定义URI，在`<provider>`中使用`android:grantUriPermission`属性，同时`<grant-uri-permission>`作为子元素。
