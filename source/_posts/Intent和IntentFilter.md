@@ -41,7 +41,7 @@ Intent中包含主要信息如下：
 	* `ACTION_VIEW`，字符串常量内容为`android.intent.action.VIEW`.结合`startActivity`能够启动activity显示，如图片或者地图信息。
 	* `ACTION_SEND`,可以在email或者一个社交媒体分享。
 
-* **data**Uri或者是MIME类型。要什么样data类型由action来决定。一般都要指定，系统知道设么样的类型数据。`setData()`和`setType`，都有就设置`setDataAndType()`
+* **data**:Uri或者是MIME类型。要什么样data类型由action来决定。一般都要指定，系统知道设么样的类型数据。`setData()`和`setType`，都有就设置`setDataAndType()`
 * **category**:指定intent组件的类型。`addCategory()`大部分不需要category.
 	* `CATEGORY_BROWSABLE`
 	* `CATEGORY_LAUNCHER`：点击图标启动的activity
@@ -50,7 +50,7 @@ Intent中包含主要信息如下：
 Intent上面提到的，决定Intent功能。可以携带一些其它的信息，用**Extras**来实现携带。
 
 * **Extras**:Key-value形式。`putExtra()`
-* **Flags**:怎样启动activity(activity task)和启动后怎么处理(是否属于最近的activity列表)。`setFlags()`
+* **Flags**:**怎样启动activity**(activity task)和**启动后怎么处理**(是否属于最近的activity列表)。`setFlags()`
 
 ## 2.1 启动例子
 
@@ -178,8 +178,9 @@ if(sendIntent.resolveActivity(getPackageManager())!=null){
 ```
 
 `MainActivity`app主入口，用launcher图标启动的activity。
-	* `ACTION_MAIN`表明主入口，不需要data
-	* `CATEGORY_LAUNHCER`这个activity的图标应该放在系统app的launcher。如果activity没有提供图标，应该从`<application>`中获得。
+
+* `ACTION_MAIN`表明主入口，不需要data
+* `CATEGORY_LAUNHCER`这个activity的图标应该放在系统app的launcher。如果activity没有提供图标，应该从`<application>`中获得。
 
 # 4.pending intent使用
 
