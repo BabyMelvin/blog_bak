@@ -39,10 +39,10 @@ filename_case: 0
 render_drafts: false
 post_asset_folder: true
 relative_link: false
-highlight:                                                                                                                                                                                                   
-  enable: true                                                                                                                                                                                               
-  auto_detect: true                                                                                                                                                                                          
-  line_number: true                                                                                                                                                                                          
+highlight:
+  enable: true
+  auto_detect: false
+  line_number: true
   tab_replace: ''
 
 # Category & Tag
